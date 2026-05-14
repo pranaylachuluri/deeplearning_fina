@@ -691,8 +691,38 @@ def generate(
     Returns:
         str : full generated text (prompt + new characters)
     """
-    # TODO 1.6: implement
-    raise NotImplementedError
+    assert temperature > 0
+
+    model.eval()
+
+    device = next(model.parameters()).device
+
+    context = [stoi[ch] for ch in prompt]
+
+    with torch.no_grad():
+        for _ in range(max_new_tokens):
+            current_context = context[-model.block_size:]
+
+            idx = torch.tensor(
+                [current_context],
+                dtype=torch.long,
+                device=device,
+            )
+
+            logits = model(idx)
+
+            logits = logits[:, -1, :]
+            logits = logits / temperature
+
+            probs = F.softmax(logits, dim=-1)
+
+            next_token = torch.multinomial(probs, num_samples=1)
+
+            context.append(next_token.item())
+
+    text = "".join(itos[i] for i in context)
+
+    return text
 
 
 # ---------------------------------------------------------------------------
