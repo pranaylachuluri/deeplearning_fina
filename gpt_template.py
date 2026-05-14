@@ -310,12 +310,28 @@ class GPTBlock(nn.Module):
         dropout:    float = 0.0,
     ):
         super().__init__()
-        # TODO 1.3 – __init__: create norm1, attn, norm2, mlp
-        raise NotImplementedError
+
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.attn = CausalSelfAttention(
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+            block_size=block_size,
+            dropout=dropout,
+        )
+
+        self.norm2 = nn.LayerNorm(embed_dim)
+
+        self.mlp = nn.Sequential(
+            nn.Linear(embed_dim, mlp_dim),
+            nn.GELU(),
+            nn.Linear(mlp_dim, embed_dim),
+            nn.Dropout(dropout),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO 1.3 – forward: apply pre-norm residual connections
-        raise NotImplementedError
+        x = x + self.attn(self.norm1(x))
+        x = x + self.mlp(self.norm2(x))
+        return x
 
 
 # ---------------------------------------------------------------------------
